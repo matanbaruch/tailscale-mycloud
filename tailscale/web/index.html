@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tailscale</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1f2328; --muted:#656d76; --accent:#3b5bfd; --ok:#1a7f37; --warn:#9a6700; --line:#d0d7de; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); padding:16px; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  h2 { font-size:15px; margin:0 0 10px; }
+  .sub { color:var(--muted); margin:0 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  label.field { display:block; margin:10px 0; }
+  label.field > span { display:block; font-weight:600; margin-bottom:4px; }
+  input[type=text], input[type=password] { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  .check { display:flex; align-items:flex-start; gap:8px; margin:8px 0; }
+  .check input { margin-top:3px; }
+  .check .desc { color:var(--muted); font-size:12.5px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  button { font:inherit; padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.danger { color:#b42318; border-color:#f1aeae; }
+  button:active { transform:translateY(1px); }
+  pre { background:#0d1117; color:#e6edf3; padding:12px; border-radius:8px; overflow:auto; max-height:340px; white-space:pre-wrap; word-break:break-word; margin:0; }
+  .muted { color:var(--muted); }
+  a { color:var(--accent); }
+  .hint { font-size:12.5px; color:var(--muted); margin-top:4px; }
+</style>
+</head>
+<body>
+  <h1>Tailscale</h1>
+  <p class="sub">Connect this WD My Cloud EX2 Ultra to your tailnet.</p>
+
+  <div class="card">
+    <h2>Status <button id="refresh" style="float:right">↻ Refresh</button></h2>
+    <pre id="status">loading…</pre>
+  </div>
+
+  <div class="card">
+    <h2>Connect</h2>
+    <form id="connect-form" onsubmit="return false;">
+      <label class="field">
+        <span>Auth key</span>
+        <input type="password" name="authkey" autocomplete="off" placeholder="tskey-auth-…">
+        <div class="hint">Generate one at
+          <a href="https://login.tailscale.com/admin/settings/keys" target="_blank" rel="noopener">login.tailscale.com → Keys</a>.
+          Needed only for the first connection — afterwards the node re-uses its saved identity.</div>
+      </label>
+      <label class="field">
+        <span>Hostname <span class="muted">(optional)</span></span>
+        <input type="text" name="hostname" autocomplete="off" placeholder="mycloud-ex2">
+      </label>
+
+      <label class="check"><input type="checkbox" name="accept_routes">
+        <span>Accept subnet routes <span class="desc">— reach subnets advertised by other tailnet devices (<code>--accept-routes</code>).</span></span></label>
+      <label class="check"><input type="checkbox" name="ssh">
+        <span>Tailscale SSH <span class="desc">— allow SSH to this NAS over the tailnet (<code>--ssh</code>).</span></span></label>
+      <label class="check"><input type="checkbox" name="advertise_exit_node">
+        <span>Advertise as exit node <span class="desc">— route other devices' internet traffic through this NAS (enables IP forwarding).</span></span></label>
+      <label class="check"><input type="checkbox" name="accept_dns" checked>
+        <span>Accept DNS (MagicDNS) <span class="desc">— use the tailnet's DNS settings (<code>--accept-dns</code>).</span></span></label>
+
+      <label class="field">
+        <span>Advertise subnet routes <span class="muted">(optional, comma-separated CIDRs)</span></span>
+        <input type="text" name="advertise_routes" autocomplete="off" placeholder="192.168.1.0/24, 10.0.0.0/8">
+        <div class="hint">Expose your LAN to the tailnet via this NAS (enables IP forwarding).</div>
+      </label>
+
+      <p class="hint">Connecting applies <em>exactly</em> the options above; unchecked toggles are reset to their defaults.</p>
+      <div class="row">
+        <button type="submit" class="primary" id="btn-connect">Connect</button>
+        <button type="button" id="btn-down">Disconnect</button>
+        <button type="button" class="danger" id="btn-logout">Log out</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Maintenance</h2>
+    <div class="row">
+      <button type="button" id="btn-restart">Restart service</button>
+      <button type="button" id="btn-au-on">Auto-update: enable</button>
+      <button type="button" id="btn-au-off">Auto-update: disable</button>
+      <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener" style="margin-left:auto;align-self:center">Open admin console ↗</a>
+    </div>
+    <div class="hint">Auto-update often does not apply to a manual static install; the reliable upgrade path is a new release of this app, then reinstall.</div>
+  </div>
+
+  <div class="card">
+    <h2>Output</h2>
+    <pre id="output">—</pre>
+  </div>
+
+<script>
+  var CGI = '/cgi-bin/tailscale.py';
+  var statusEl = document.getElementById('status');
+  var outputEl = document.getElementById('output');
+
+  function setOut(text) { outputEl.textContent = text; }
+
+  async function loadStatus() {
+    statusEl.textContent = 'loading…';
+    try {
+      var res = await fetch(CGI, { method: 'GET', cache: 'no-store' });
+      statusEl.textContent = await res.text();
+    } catch (e) {
+      statusEl.textContent = 'Failed to load status: ' + e;
+    }
+  }
+
+  async function post(fields) {
+    var data = new FormData();
+    Object.keys(fields).forEach(function (k) { data.append(k, fields[k]); });
+    setOut('working…');
+    try {
+      var res = await fetch(CGI, { method: 'POST', body: data, cache: 'no-store' });
+      setOut(await res.text());
+    } catch (e) {
+      setOut('Request failed: ' + e);
+    }
+    loadStatus();
+  }
+
+  function connect() {
+    var form = document.getElementById('connect-form');
+    var fd = new FormData(form);
+    var fields = { action: 'up' };
+    fd.forEach(function (v, k) { fields[k] = v; });  // checkboxes only present when checked
+    post(fields);
+  }
+
+  document.getElementById('refresh').addEventListener('click', loadStatus);
+  document.getElementById('connect-form').addEventListener('submit', connect);
+  document.getElementById('btn-connect').addEventListener('click', connect);
+  document.getElementById('btn-down').addEventListener('click', function () { post({ action: 'down' }); });
+  document.getElementById('btn-logout').addEventListener('click', function () {
+    if (confirm('Log out removes this node from your tailnet. A new auth key is needed to reconnect. Continue?')) post({ action: 'logout' });
+  });
+  document.getElementById('btn-restart').addEventListener('click', function () { post({ action: 'restart' }); });
+  document.getElementById('btn-au-on').addEventListener('click', function () { post({ action: 'set_autoupdate', value: 'true' }); });
+  document.getElementById('btn-au-off').addEventListener('click', function () { post({ action: 'set_autoupdate', value: 'false' }); });
+
+  loadStatus();
+</script>
+</body>
+</html>

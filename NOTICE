@@ -1,0 +1,27 @@
+tailscale-mycloud
+=================
+
+This project packages Tailscale as an installable app for Western Digital
+My Cloud (OS5) NAS devices. It bundles and builds on third-party components:
+
+1. mksapkg-OS5
+   - Source: https://github.com/WDCommunity/wdpksrc
+   - License: BSD 3-Clause (Copyright (c) 2018, WDCommunity)
+   - The packaging tool that produces the WD `.bin` (APKG) format. Vendored as
+     a prebuilt Linux x86-64 binary and executed only inside the build Docker
+     image. Not modified.
+
+2. Package structure / scripts
+   - Modeled on the ZeroTier package from WDCommunity/wdpksrc (BSD 3-Clause),
+     which targets the My Cloud EX2 Ultra on OS5.
+
+3. Tailscale (tailscaled, tailscale)
+   - Source: https://github.com/tailscale/tailscale  (https://tailscale.com)
+   - License: BSD 3-Clause (Copyright (c) Tailscale Inc & AUTHORS)
+   - NOT vendored in this repository. The official static `arm` build is
+     downloaded from https://pkgs.tailscale.com at build time and verified
+     against its published SHA-256 checksum before being placed in the package.
+
+"Tailscale" and "WD My Cloud" are trademarks of their respective owners. This
+project is an independent, community effort and is not affiliated with,
+endorsed by, or sponsored by Tailscale Inc. or Western Digital.

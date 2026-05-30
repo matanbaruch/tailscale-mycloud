@@ -1,0 +1,19 @@
+Package:	tailscale
+Version:	1.98.4
+Packager:	matanbaruch
+Email:
+Homepage:	https://tailscale.com
+Description:	Tailscale - zero-config WireGuard-based mesh VPN. Connect this NAS to your tailnet, with a web UI for the auth key and controls.
+Icon:			tailscale.png
+AddonShowName:	Tailscale
+AddonIndexPage:	index.html
+AddonUsedPort:
+InstDepend:
+InstConflict:
+StartDepend:
+StartConflict:
+CenterType: 1
+UserControl: 0
+MinFWVer:
+MaxFWVer:
+IndividualFlag: 0

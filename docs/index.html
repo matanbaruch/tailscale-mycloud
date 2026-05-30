@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tailscale for WD My Cloud EX2 Ultra</title>
+<meta name="description" content="Install Tailscale on a Western Digital My Cloud EX2 Ultra (OS5) with a web UI for the auth key and controls.">
+<link rel="icon" href="assets/tailscale.png">
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#9aa4af; --line:#30363d; --accent:#3b82f6; --accent2:#22c55e; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.65 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:860px; margin:0 auto; padding:32px 20px 64px; }
+  header { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
+  header img { width:56px; height:56px; border-radius:12px; }
+  h1 { font-size:28px; margin:0; }
+  .tag { color:var(--muted); margin:2px 0 0; }
+  .badges { margin:18px 0 26px; display:flex; flex-wrap:wrap; gap:8px; }
+  .badges img { height:20px; }
+  .cta { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; padding:12px 20px; border-radius:8px; margin:6px 8px 6px 0; }
+  .cta.alt { background:transparent; border:1px solid var(--line); color:var(--ink); }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin:18px 0; }
+  h2 { font-size:19px; margin:0 0 12px; }
+  ol, ul { margin:0; padding-left:22px; }
+  li { margin:6px 0; }
+  code { background:#0b0f14; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:13.5px; }
+  pre { background:#0b0f14; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow:auto; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .feat { background:#0b0f14; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .feat b { display:block; margin-bottom:2px; }
+  .muted { color:var(--muted); }
+  a { color:var(--accent); }
+  .warn { border-left:3px solid #d29922; padding-left:14px; color:#e3b341; }
+  footer { color:var(--muted); font-size:13.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="assets/tailscale.png" alt="">
+    <div>
+      <h1>Tailscale for WD My Cloud EX2 Ultra</h1>
+      <p class="tag">A web-installable Tailscale app for the Western Digital My Cloud EX2 Ultra (OS&nbsp;5).</p>
+    </div>
+  </header>
+
+  <div class="badges">
+    <a href="https://github.com/matanbaruch/tailscale-mycloud/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/matanbaruch/tailscale-mycloud/actions/workflows/ci.yml/badge.svg"></a>
+    <a href="https://github.com/matanbaruch/tailscale-mycloud/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/matanbaruch/tailscale-mycloud?sort=semver"></a>
+    <a href="https://github.com/matanbaruch/tailscale-mycloud/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-BSD--3--Clause-blue.svg"></a>
+  </div>
+
+  <a class="cta" href="https://github.com/matanbaruch/tailscale-mycloud/releases/latest">⬇ Download the latest .bin</a>
+  <a class="cta alt" href="https://github.com/matanbaruch/tailscale-mycloud">View on GitHub</a>
+
+  <div class="panel">
+    <h2>What it does</h2>
+    <p>Connects your NAS to your <a href="https://tailscale.com">Tailscale</a> tailnet, installed the normal WD way
+    — upload a <code>.bin</code> from <b>Apps → Install Manually</b> — then managed from a page right inside the
+    dashboard: paste an auth key, connect/disconnect, and flip capability toggles. Your node identity is stored on
+    the persistent data volume, so it survives reboots and you only enter a key once.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Install</h2>
+    <ol>
+      <li>Download <code>MyCloudEX2Ultra_tailscale_&lt;version&gt;.bin</code> from the
+        <a href="https://github.com/matanbaruch/tailscale-mycloud/releases/latest">latest release</a>.</li>
+      <li>My Cloud dashboard → <b>Apps</b> → <b>Install an app manually</b> → pick the <code>.bin</code>
+        (see <a href="https://support-en.wd.com/app/answers/detailweb/a_id/29960">WD's OS5 guide</a>).</li>
+      <li>Open <b>Apps → Tailscale</b>, paste an auth key from
+        <a href="https://login.tailscale.com/admin/settings/keys">login.tailscale.com → Keys</a>, choose toggles, click <b>Connect</b>.</li>
+      <li>Reach the NAS at its <code>100.x.y.z</code> address from any tailnet device.</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <h2>Web UI features</h2>
+    <div class="grid">
+      <div class="feat"><b>Auth key field</b><span class="muted">Paste <code>tskey-…</code>; never echoed back.</span></div>
+      <div class="feat"><b>Connect / Disconnect</b><span class="muted">Plus Logout and Restart service.</span></div>
+      <div class="feat"><b>Live status</b><span class="muted"><code>tailscale status</code>, IP, version, net mode.</span></div>
+      <div class="feat"><b>Accept routes</b><span class="muted"><code>--accept-routes</code></span></div>
+      <div class="feat"><b>Tailscale SSH</b><span class="muted"><code>--ssh</code></span></div>
+      <div class="feat"><b>Exit node</b><span class="muted"><code>--advertise-exit-node</code> + IP forwarding</span></div>
+      <div class="feat"><b>Subnet router</b><span class="muted"><code>--advertise-routes=CIDR</code></span></div>
+      <div class="feat"><b>Auto-update toggle</b><span class="muted"><code>tailscale set --auto-update</code></span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Build from source</h2>
+    <p class="muted">Requires Docker (the WD packaging tool is a Linux binary run inside the build image).</p>
+    <pre>git clone https://github.com/matanbaruch/tailscale-mycloud
+cd tailscale-mycloud
+./build.sh
+# -> packages/MyCloudEX2Ultra_tailscale_&lt;version&gt;.bin</pre>
+    <p class="muted">The bundled Tailscale version is auto-bumped daily via a scheduled PR; merging it cuts a new release.</p>
+  </div>
+
+  <div class="panel">
+    <h2 class="warn">Honest status</h2>
+    <p>The package is built and round-trip-verified in CI (correct APKG header, armhf <code>tailscaled</code>, expected
+    files), but the maintainer can't execute it on physical NAS hardware in CI. If TUN is unavailable on stock OS5,
+    the app falls back to userspace networking and warns you in the status panel. See the
+    <a href="https://github.com/matanbaruch/tailscale-mycloud#troubleshooting">troubleshooting guide</a>.</p>
+  </div>
+
+  <footer>
+    BSD-3-Clause. Not affiliated with Tailscale Inc. or Western Digital. Packaging tool from
+    <a href="https://github.com/WDCommunity/wdpksrc">WDCommunity/wdpksrc</a>.
+  </footer>
+</div>
+</body>
+</html>

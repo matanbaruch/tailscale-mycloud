@@ -1,0 +1,23 @@
+[project]
+name = "tailscale-mycloud"
+version = "0.0.0"  # not published to PyPI; the shipped version lives in tailscale/apkg.rc
+description = "Tailscale app for Western Digital My Cloud EX2 Ultra (OS5)"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+# The CGI logic under tailscale/cgi-bin/ is importable for unit tests.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tailscale/cgi-bin"]
+addopts = "-ra"
+
+[tool.ruff]
+# Only lint our own Python; the device runs Python 3 (CGI), keep it portable.
+target-version = "py39"
+line-length = 100
+extend-exclude = [".reference-wdpksrc"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
