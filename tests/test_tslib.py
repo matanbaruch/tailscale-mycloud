@@ -62,34 +62,6 @@ def test_hostname_invalid(value):
 
 
 # --------------------------------------------------------------------------- #
-# parse_routes
-# --------------------------------------------------------------------------- #
-def test_routes_empty():
-    assert tslib.parse_routes("") == []
-    assert tslib.parse_routes(None) == []
-
-
-def test_routes_valid_list_normalized():
-    assert tslib.parse_routes("192.168.1.0/24, 10.0.0.0/8") == [
-        "192.168.1.0/24",
-        "10.0.0.0/8",
-    ]
-
-
-def test_routes_accepts_ipv6():
-    assert tslib.parse_routes("fd7a::/48") == ["fd7a::/48"]
-
-
-@pytest.mark.parametrize(
-    "value",
-    ["999.0.0.0/8", "not-a-cidr", "192.168.1.0/33", "10.0.0.0/8; rm -rf /", "$(id)"],
-)
-def test_routes_invalid(value):
-    with pytest.raises(tslib.ValidationError):
-        tslib.parse_routes(value)
-
-
-# --------------------------------------------------------------------------- #
 # build_up_command
 # --------------------------------------------------------------------------- #
 def test_up_minimal_with_key():
@@ -100,6 +72,18 @@ def test_up_minimal_with_key():
     assert "--accept-dns=false" in cmd
     assert "--accept-routes" not in cmd
     assert "--ssh" not in cmd
+
+
+def test_up_never_advertises():
+    # Exit-node / subnet-router advertising is unsupported on this device's kernel
+    # and must never be emitted, even if a caller smuggles the old field names in.
+    cmd = tslib.build_up_command(
+        {
+            "authkey": VALID_KEY,
+            "advertise_exit_node": "on",
+            "advertise_routes": "192.168.1.0/24",
+        }
+    )
     assert "--advertise-exit-node" not in cmd
     assert not any(c.startswith("--advertise-routes") for c in cmd)
 
@@ -127,17 +111,13 @@ def test_up_all_toggles():
             "hostname": "mycloud-ex2",
             "accept_routes": "on",
             "ssh": "on",
-            "advertise_exit_node": "on",
             "accept_dns": "on",
-            "advertise_routes": "192.168.1.0/24,10.0.0.0/8",
         }
     )
     assert "--hostname=mycloud-ex2" in cmd
     assert "--accept-routes" in cmd
     assert "--ssh" in cmd
-    assert "--advertise-exit-node" in cmd
     assert "--accept-dns=true" in cmd
-    assert "--advertise-routes=192.168.1.0/24,10.0.0.0/8" in cmd
 
 
 def test_up_invalid_key_raises():
@@ -158,18 +138,3 @@ def test_authkey_appears_at_most_once():
 def test_no_key_means_no_key_token_anywhere():
     cmd = tslib.build_up_command({"ssh": "on"})
     assert all("tskey-" not in c for c in cmd)
-
-
-# --------------------------------------------------------------------------- #
-# needs_ip_forwarding
-# --------------------------------------------------------------------------- #
-def test_forwarding_required_for_exit_node():
-    assert tslib.needs_ip_forwarding({"advertise_exit_node": "on"}) is True
-
-
-def test_forwarding_required_for_subnet_router():
-    assert tslib.needs_ip_forwarding({"advertise_routes": "192.168.1.0/24"}) is True
-
-
-def test_forwarding_not_required_by_default():
-    assert tslib.needs_ip_forwarding({"authkey": VALID_KEY, "ssh": "on"}) is False

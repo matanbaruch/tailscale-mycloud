@@ -6,7 +6,6 @@ standard library (``re``, ``ipaddress``) so it runs identically on the NAS's
 Python 3 and on a developer/CI machine.
 """
 
-import ipaddress
 import re
 
 # Tailscale auth keys look like: tskey-auth-XXXX..., tskey-XXXX...
@@ -48,52 +47,26 @@ def validate_hostname(value):
     return value
 
 
-def parse_routes(value):
-    """Parse a comma-separated list of CIDRs into a normalized list of strings.
-
-    Empty input returns ``[]``. Any malformed entry raises ``ValidationError``
-    (this also rejects shell-injection attempts, since they are not valid CIDRs).
-    """
-    value = (value or "").strip()
-    if not value:
-        return []
-    routes = []
-    for part in value.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        try:
-            net = ipaddress.ip_network(part, strict=False)
-        except ValueError as exc:
-            raise ValidationError(f"Invalid route {part!r}: {exc}") from exc
-        routes.append(str(net))
-    return routes
-
-
-def needs_ip_forwarding(params):
-    """True if the chosen options (exit node / subnet router) need forwarding."""
-    return _truthy(params.get("advertise_exit_node")) or bool(
-        parse_routes(params.get("advertise_routes"))
-    )
-
-
 def build_up_command(params, tailscale_bin="tailscale", socket=None):
     """Build the argv list for ``tailscale up`` from validated UI params.
 
     Recognized ``params`` keys:
       - ``authkey`` (optional after first auth; validated when present)
       - ``hostname`` (optional)
-      - ``accept_routes``, ``ssh``, ``advertise_exit_node``, ``accept_dns`` (bools)
-      - ``advertise_routes`` (comma-separated CIDR string)
+      - ``accept_routes``, ``ssh``, ``accept_dns`` (bools)
 
     ``--reset`` is always included so the form represents the full desired
     state: toggles left unchecked are reset to their defaults. The auth key is
     emitted as a single ``--authkey=VALUE`` token; callers must never log it.
+
+    Note: exit-node and subnet-router *advertising* are intentionally not
+    exposed. They require netfilter kernel modules (notably ``xt_MARK``) that the
+    EX2 Ultra's OS 5 firmware does not ship, so Tailscale cannot install its
+    forwarding rules. Any ``advertise_*`` params are ignored here.
     """
     raw_key = (params.get("authkey") or "").strip()
     authkey = validate_authkey(raw_key) if raw_key else ""
     hostname = validate_hostname(params.get("hostname"))
-    routes = parse_routes(params.get("advertise_routes"))
 
     cmd = [tailscale_bin]
     if socket:
@@ -108,11 +81,7 @@ def build_up_command(params, tailscale_bin="tailscale", socket=None):
         cmd.append("--accept-routes")
     if _truthy(params.get("ssh")):
         cmd.append("--ssh")
-    if _truthy(params.get("advertise_exit_node")):
-        cmd.append("--advertise-exit-node")
     # accept-dns defaults to true in Tailscale, so set it explicitly both ways.
     cmd.append("--accept-dns=true" if _truthy(params.get("accept_dns")) else "--accept-dns=false")
-    if routes:
-        cmd.append("--advertise-routes=" + ",".join(routes))
 
     return cmd

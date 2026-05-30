@@ -8,9 +8,10 @@ A **[Tailscale](https://tailscale.com)** app for the **Western Digital My Cloud 
 Install it the normal WD way — upload a `.bin` from the dashboard's **Apps → Install Manually** page —
 then paste your auth key and control the connection from a built-in web page.
 
-> **Heads-up / honesty note:** this package is built and verified on a Linux/Docker toolchain, but the
-> maintainer cannot execute it on physical NAS hardware in CI. "Builds and unpacks correctly" is verified;
-> "runs on your device" is your final test. See [Troubleshooting](#troubleshooting) for on-device debugging.
+> **Status:** confirmed working on a physical My Cloud EX2 Ultra (firmware 5.33.102) — installed from the
+> dashboard, connects to the tailnet in kernel mode, and reconnects on its own after a reboot. Every change
+> is also round-trip-verified in CI. The one feature this model's kernel can't support is exit-node /
+> subnet-router *advertising* — see [Caveats & security](#caveats--security).
 
 ---
 
@@ -24,8 +25,7 @@ A web page inside the My Cloud dashboard (**Apps → Tailscale**) with:
 - Capability toggles:
   - **Accept subnet routes** (`--accept-routes`)
   - **Tailscale SSH** (`--ssh`)
-  - **Exit node** (`--advertise-exit-node`, enables IP forwarding)
-  - **Subnet router** (`--advertise-routes=<CIDR>`, enables IP forwarding)
+  - **Accept DNS / MagicDNS** (`--accept-dns`)
   - **Auto-update** (`tailscale set --auto-update`)
 
 State (your node's identity) is stored on the **persistent data volume**, so it survives reboots.
@@ -94,7 +94,10 @@ The package lifecycle scripts (`install/init/start/stop/clean/remove`) follow th
 
 - The auth key is sent to the device's local CGI to run `tailscale up`; it is **never echoed back** or
   written to the page. The key authenticates the node once — afterwards only the state dir matters.
-- Exit-node / subnet-router toggles enable IP forwarding (`sysctl`).
+- **Exit node / subnet router are not supported on the EX2 Ultra.** Tailscale needs netfilter kernel
+  modules — notably `xt_MARK` — to install its packet-forwarding rules, and this model's OS 5 firmware
+  (kernel `4.14.22-armada`) does not ship a loadable `xt_MARK`. The core VPN (reach the NAS, Tailscale SSH,
+  accept-routes) is unaffected; only *advertising* this NAS as an exit node or subnet router is unavailable.
 - `tailscale` CLI auto-update generally does **not** apply to a manual static install — the reliable
   upgrade path is a new release here (auto-bumped) → reinstall.
 - **Uninstalling logs the node out** of your tailnet (a fresh install needs a new key).

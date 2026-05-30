@@ -82,8 +82,7 @@
       <div class="feat"><b>Live status</b><span class="muted"><code>tailscale status</code>, IP, version, net mode.</span></div>
       <div class="feat"><b>Accept routes</b><span class="muted"><code>--accept-routes</code></span></div>
       <div class="feat"><b>Tailscale SSH</b><span class="muted"><code>--ssh</code></span></div>
-      <div class="feat"><b>Exit node</b><span class="muted"><code>--advertise-exit-node</code> + IP forwarding</span></div>
-      <div class="feat"><b>Subnet router</b><span class="muted"><code>--advertise-routes=CIDR</code></span></div>
+      <div class="feat"><b>Accept DNS</b><span class="muted"><code>--accept-dns</code> (MagicDNS)</span></div>
       <div class="feat"><b>Auto-update toggle</b><span class="muted"><code>tailscale set --auto-update</code></span></div>
     </div>
   </div>
@@ -99,10 +98,13 @@ cd tailscale-mycloud
   </div>
 
   <div class="panel">
-    <h2 class="warn">Honest status</h2>
-    <p>The package is built and round-trip-verified in CI (correct APKG header, armhf <code>tailscaled</code>, expected
-    files), but the maintainer can't execute it on physical NAS hardware in CI. If TUN is unavailable on stock OS5,
-    the app falls back to userspace networking and warns you in the status panel. See the
+    <h2 class="warn">Status &amp; limitations</h2>
+    <p><b>Confirmed working</b> on a physical My Cloud EX2 Ultra (firmware 5.33.102): installs from the dashboard,
+    connects in kernel mode, and reconnects on its own after a reboot. Every change is also round-trip-verified in CI
+    (APKG header, armhf <code>tailscaled</code>, expected files).</p>
+    <p class="muted"><b>Exit node / subnet router are not supported on this model.</b> Tailscale needs netfilter kernel
+    modules (notably <code>xt_MARK</code>) to install its forwarding rules, and the EX2 Ultra's OS&nbsp;5 kernel doesn't
+    ship them. The core VPN — reaching the NAS, Tailscale SSH, accepting routes — is unaffected. See the
     <a href="https://github.com/matanbaruch/tailscale-mycloud#troubleshooting">troubleshooting guide</a>.</p>
   </div>
 

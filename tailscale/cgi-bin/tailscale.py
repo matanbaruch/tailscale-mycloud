@@ -37,9 +37,7 @@ UP_FIELDS = (
     "hostname",
     "accept_routes",
     "ssh",
-    "advertise_exit_node",
     "accept_dns",
-    "advertise_routes",
 )
 
 
@@ -128,13 +126,6 @@ def handle_up(form):
 
     # Make sure the daemon is up before we try to talk to it.
     ensure_daemon()
-
-    if tslib.needs_ip_forwarding(params):
-        out("Enabling IP forwarding (exit node / subnet router)...")
-        rc4, o4 = run(["sysctl", "-w", "net.ipv4.ip_forward=1"], timeout=15)
-        rc6, o6 = run(["sysctl", "-w", "net.ipv6.conf.all.forwarding=1"], timeout=15)
-        if rc4 != 0 or rc6 != 0:
-            out(f"WARNING: could not enable IP forwarding: {o4.strip()} {o6.strip()}")
 
     rc, output = run(cmd, timeout=180)
     # NOTE: never print `cmd` -- it contains the auth key. Show tailscale's output only.

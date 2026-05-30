@@ -57,18 +57,12 @@
         <span>Accept subnet routes <span class="desc">— reach subnets advertised by other tailnet devices (<code>--accept-routes</code>).</span></span></label>
       <label class="check"><input type="checkbox" name="ssh">
         <span>Tailscale SSH <span class="desc">— allow SSH to this NAS over the tailnet (<code>--ssh</code>).</span></span></label>
-      <label class="check"><input type="checkbox" name="advertise_exit_node">
-        <span>Advertise as exit node <span class="desc">— route other devices' internet traffic through this NAS (enables IP forwarding).</span></span></label>
       <label class="check"><input type="checkbox" name="accept_dns" checked>
         <span>Accept DNS (MagicDNS) <span class="desc">— use the tailnet's DNS settings (<code>--accept-dns</code>).</span></span></label>
 
-      <label class="field">
-        <span>Advertise subnet routes <span class="muted">(optional, comma-separated CIDRs)</span></span>
-        <input type="text" name="advertise_routes" autocomplete="off" placeholder="192.168.1.0/24, 10.0.0.0/8">
-        <div class="hint">Expose your LAN to the tailnet via this NAS (enables IP forwarding).</div>
-      </label>
-
-      <p class="hint">Connecting applies <em>exactly</em> the options above; unchecked toggles are reset to their defaults.</p>
+      <p class="hint">Connecting applies <em>exactly</em> the options above; unchecked toggles are reset to their defaults.
+        <br><strong>Exit node / subnet router aren't offered:</strong> this EX2 Ultra's OS&nbsp;5 kernel lacks the
+        netfilter modules (notably <code>xt_MARK</code>) Tailscale needs to install its forwarding rules.</p>
       <div class="row">
         <button type="submit" class="primary" id="btn-connect">Connect</button>
         <button type="button" id="btn-down">Disconnect</button>
