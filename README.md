@@ -43,6 +43,29 @@ You only enter an auth key **once**.
    pick any toggles, and click **Connect**.
 4. The NAS appears in your tailnet; reach it at its `100.x.y.z` address from any other tailnet device.
 
+### Upgrading / reinstalling
+
+The node's identity (and its `100.x` address) lives in the state dir on the persistent volume.
+A **reboot keeps it** — `tailscaled` reconnects on its own. An **uninstall does not**: `remove.sh`
+logs the node out and deletes the state dir.
+
+So when you install a newer `.bin`:
+
+- **If the dashboard upgrades in place**, your login is kept — open the app and you're already connected.
+- **If it makes you uninstall first**, you'll reconnect as a *new* node. Two options:
+  - *Easiest:* generate a **reusable** auth key beforehand and paste it after reinstalling (a new `100.x`
+    address may be assigned).
+  - *To keep the same node and IP:* SSH in and back up the state dir **before** reinstalling —
+    ```sh
+    cp -a /mnt/HD/HD_a2/.systemfile/tailscale /mnt/HD/HD_a2/.systemfile/tailscale.bak
+    ```
+    Then after reinstalling, if the app comes up logged out: restore it and restart —
+    ```sh
+    /mnt/HD/HD_a2/Nas_Prog/tailscale/stop.sh /mnt/HD/HD_a2/Nas_Prog/tailscale
+    cp -a /mnt/HD/HD_a2/.systemfile/tailscale.bak/. /mnt/HD/HD_a2/.systemfile/tailscale/
+    /mnt/HD/HD_a2/Nas_Prog/tailscale/start.sh /mnt/HD/HD_a2/Nas_Prog/tailscale
+    ```
+
 ## Build from source
 
 Requires **Docker** (the WD packaging tool `mksapkg-OS5` is Linux x86-64 and runs inside the build image).
